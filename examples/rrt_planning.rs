@@ -38,7 +38,7 @@ fn main() {
     );
 
     // get path
-    let path = rrt.planning().unwrap();
+    let path = rrt.planning().expect("path not found!");
 
     for point in path {
         println!("{:?} {:?}", point.0, point.1);
