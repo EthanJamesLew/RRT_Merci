@@ -69,7 +69,7 @@ impl RRT {
             max_iter: max_iter,
             explore_area: explore_area,
             //robot_radius: 0.0,
-            node_list: Vec::<RRTNode>::new(),
+            node_list: Vec::<RRTNode>::with_capacity(max_iter as usize),
             rng: thread_rng(),
         }
     }
@@ -204,18 +204,7 @@ impl RRT {
 
     /// grow out a path from node to node
     fn steer(&self, from_node: &RRTNode, to_node: &RRTNode, expand_dist: f32, index: usize) -> RRTNode {
-        let mut new_node = RRTNode {
-            id: index,
-            parent_id: Some(from_node.id),
-            x: from_node.x,
-            y: from_node.y,
-            path_x: Vec::<f32>::new(),
-            path_y: Vec::<f32>::new(),
-        };
-        new_node.path_x.push(from_node.x);
-        new_node.path_y.push(from_node.y);
-
-        let da = self.calc_dist_and_angle(&new_node, &to_node);
+        let da = self.calc_dist_and_angle(&from_node, &to_node);
 
         // clip extend length to dist or expand distance
         let extend_length = if expand_dist > da.0 {
@@ -226,6 +215,17 @@ impl RRT {
 
         // number of times to expand the node (path resolution increments)
         let nexpand = (extend_length / self.path_resolution).floor() as u32;
+
+        let mut new_node = RRTNode {
+            id: index,
+            parent_id: Some(from_node.id),
+            x: from_node.x,
+            y: from_node.y,
+            path_x: Vec::<f32>::with_capacity(nexpand as usize),
+            path_y: Vec::<f32>::with_capacity(nexpand as usize),
+        };
+        new_node.path_x.push(from_node.x);
+        new_node.path_y.push(from_node.y);
 
         // expand out the node
         for _idx in 0..nexpand {
