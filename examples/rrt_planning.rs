@@ -1,12 +1,14 @@
+/// RRT Example
 use rrt_merci as rrt;
 
 fn main() {
+    // setup the RRT
     let start = (0.0, 0.0);
     let goal = (10.0, 10.0);
-    let expand_dis = 1.0;
-    let path_resolution = 0.1;
-    let goal_sample_rate = 50;
-    let max_iter = 100;
+    let expand_dis = 3.0;
+    let path_resolution = 0.2;
+    let goal_sample_rate = 99;
+    let max_iter = 2000;
     let explore_area = rrt::Bounds2D {
         x_min: 0.0,
         x_max: 10.0,
@@ -20,7 +22,7 @@ fn main() {
             rrt::ObstacleSphere {
                 x: 5.0,
                 y: 5.0,
-                radius: 1.0,
+                radius: 4.5,
             },
             rrt::ObstacleSphere {
                 x: 8.0,
@@ -34,5 +36,12 @@ fn main() {
         max_iter,
         explore_area,
     );
-    rrt.planning();
+
+    // get path
+    let path = rrt.planning().unwrap();
+
+    for point in path {
+        println!("{:?} {:?}", point.0, point.1);
+    }
+
 }
