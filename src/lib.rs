@@ -1,26 +1,16 @@
-use rand::distributions::Uniform;
 /// RRT Implementation in Rust
 /// Make a better way to describe obstacles
 /// TODO: implement RRT* and others...
 /// TODO: add methods to node (distance between) and obstacles (does collide)
+mod rrt_node;
+use rrt_node::*;
+use rand::distributions::Uniform;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 pub struct ObstacleSphere {
     pub x: f32,
     pub y: f32,
     pub radius: f32,
-}
-
-/// node of randomly exploring random tree
-pub struct RRTNode {
-    id: usize,
-    parent_id: Option<usize>,
-    x: f32,
-    y: f32,
-    path_x: Vec<f32>,
-    path_y: Vec<f32>,
-    // FIXME: Rust doesn't like recursive data structures
-    //parent: Vec<Option<RRTNode>>
 }
 
 /// represent bounds in 2D (inside rectangle)
@@ -57,7 +47,7 @@ impl RRT {
         goal_sample_rate: u32,
         max_iter: u32,
         explore_area: Bounds2D,
-    ) -> RRT {
+    ) -> Self {
         // build it out with defaults on the tree and robot size
         Self {
             start: start,
@@ -77,22 +67,8 @@ impl RRT {
     /// RRT Path Planning
     pub fn planning(&mut self) -> Option<Vec<(f32, f32)>> {
         // start by introdcing the start node to the node list
-        let start_node = RRTNode {
-            id: 0,
-            parent_id: None,
-            x: self.start.0,
-            y: self.start.1,
-            path_x: Vec::<f32>::new(),
-            path_y: Vec::<f32>::new(),
-        };
-        let end_node = RRTNode {
-            id: 0,
-            parent_id: None,
-            x: self.goal.0,
-            y: self.goal.1,
-            path_x: Vec::<f32>::new(),
-            path_y: Vec::<f32>::new(),
-        };
+        let start_node = RRTNode::new(self.start.0, self.start.1);
+        let end_node = RRTNode::new(self.goal.0, self.goal.1);        
         self.node_list.push(start_node);
 
         // we are building the identifiers to match their position in the array -- this is somewhat fickle,
@@ -104,7 +80,8 @@ impl RRT {
         // now start the tree search...
         for _idx in 1..=self.max_iter {
             let rnd_node = self.get_random_node(&end_node);
-            let nearest_ind = self.get_nearest_node_index(&self.node_list, &rnd_node);
+            let nearest_ind = rnd_node.get_nearest_node_index(&self.node_list)
+                .expect("node list should have a size > 0");
             let nearest_node = self
                 .node_list
                 .get(nearest_ind)
@@ -118,14 +95,14 @@ impl RRT {
             }
 
             // check if we've reached the goal
+            // terminating condition
             let last_node = self.node_list.last().unwrap();
-            if self.calc_distance_to_goal(&last_node) <= self.expand_dis {
+            if last_node.distance_between_pos(self.goal) <= self.expand_dis {
                 let final_node = self.steer(&last_node, &end_node, self.expand_dis, push_idx);
                 self.node_list.push(final_node);
                 achieve_goal = true;
                 break;
             }
-            // terminating condition
         }
 
         // if goal is met, produce the path
@@ -146,13 +123,6 @@ impl RRT {
         }
     }
 
-    /// calculate the distance a node has to final goal
-    fn calc_distance_to_goal(&self, node: &RRTNode) -> f32 {
-        let dx = node.x - self.goal.0;
-        let dy = node.y - self.goal.1;
-        (dx * dx + dy * dy).sqrt()
-    }
-
     /// determine if collision occurs in the obstacle list
     /// maybe move this out to a obstacle struct?
     fn is_collision(&self, node: &RRTNode) -> bool {
@@ -166,49 +136,22 @@ impl RRT {
         // TODO: make this more efficient with rng setup
         let percent = self.rng.gen_range(0..100);
         if percent > self.goal_sample_rate {
-            RRTNode {
-                id: 0,
-                parent_id: None,
-                x: end.x,
-                y: end.y,
-                path_x: Vec::<f32>::new(),
-                path_y: Vec::<f32>::new(),
-            }
+            RRTNode::new(end.x, end.y)
         } else {
             let uniform_x = Uniform::new(self.explore_area.x_min, self.explore_area.x_max);
             let uniform_y = Uniform::new(self.explore_area.y_min, self.explore_area.y_max);
-            RRTNode {
-                id: 0,
-                parent_id: None,
-                x: self.rng.sample(&uniform_x),
-                y: self.rng.sample(&uniform_y),
-                path_x: Vec::<f32>::new(),
-                path_y: Vec::<f32>::new(),
-            }
+            RRTNode::new(self.rng.sample(&uniform_x), self.rng.sample(&uniform_y))
         }
-    }
-
-    /// get nearest node index inside a node_list and target node
-    fn get_nearest_node_index(&self, node_list: &Vec<RRTNode>, target_node: &RRTNode) -> usize {
-        let mut min_dist = std::f32::MAX;
-        let mut min_ind = 0;
-        for (idx, node) in node_list.iter().enumerate() {
-            let dist = (node.x - target_node.x).powf(2.0) + (node.y - target_node.y).powf(2.0);
-            if dist < min_dist {
-                min_dist = dist;
-                min_ind = idx;
-            }
-        }
-        min_ind
     }
 
     /// grow out a path from node to node
     fn steer(&self, from_node: &RRTNode, to_node: &RRTNode, expand_dist: f32, index: usize) -> RRTNode {
-        let da = self.calc_dist_and_angle(&from_node, &to_node);
+        let dist = from_node.distance_between(&to_node); //self.calc_dist_and_angle(&from_node, &to_node);
+        let theta = to_node.angle_between(&from_node);
 
         // clip extend length to dist or expand distance
-        let extend_length = if expand_dist > da.0 {
-            da.0
+        let extend_length = if expand_dist > dist {
+            dist
         } else {
             expand_dist
         };
@@ -229,8 +172,8 @@ impl RRT {
 
         // expand out the node
         for _idx in 0..nexpand {
-            let new_x = new_node.x + self.path_resolution * da.1.cos();
-            let new_y = new_node.y + self.path_resolution * da.1.sin();
+            let new_x = new_node.x + self.path_resolution * theta.cos();
+            let new_y = new_node.y + self.path_resolution * theta.sin();
             new_node.path_x.push(new_x);
             new_node.path_y.push(new_y);
             new_node.x = new_x;
@@ -238,8 +181,8 @@ impl RRT {
         }
 
         // if path is within resolution to the final node, add that
-        let d = self.calc_dist_and_angle(&new_node, &to_node);
-        if d.0 <= self.path_resolution {
+        let dist1 = new_node.distance_between(&to_node);
+        if dist1 <= self.path_resolution {
             new_node.path_x.push(to_node.x);
             new_node.path_y.push(to_node.y);
             new_node.x = to_node.x;
@@ -249,14 +192,6 @@ impl RRT {
         new_node
     }
 
-    /// calculate distance and angle between two nodes
-    fn calc_dist_and_angle(&self, node_a: &RRTNode, node_b: &RRTNode) -> (f32, f32) {
-        let dx = node_b.x - node_a.x;
-        let dy = node_b.y - node_a.y;
-        let d = (dx.powf(2.0) + dy.powf(2.0)).sqrt();
-        let theta = dy.atan2(dx);
-        (d, theta)
-    }
 }
 
 impl Bounds2D {
