@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.0"
+nalgebra = "0.31"
+ncollide2d = "0.33"
