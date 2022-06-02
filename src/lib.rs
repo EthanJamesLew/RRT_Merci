@@ -3,50 +3,38 @@
 /// TODO: implement RRT* and others...
 /// TODO: add methods to node (distance between) and obstacles (does collide)
 mod rrt_node;
-use rrt_node::*;
+pub use rrt_node::*;
+mod bounds;
+pub use bounds::*;
 use rand::distributions::Uniform;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
-pub struct ObstacleSphere {
-    pub x: f32,
-    pub y: f32,
-    pub radius: f32,
-}
-
-/// represent bounds in 2D (inside rectangle)
-pub struct Bounds2D {
-    pub x_min: f32,
-    pub x_max: f32,
-    pub y_min: f32,
-    pub y_max: f32,
-}
-
 /// RRT Configuration Object
-pub struct RRT {
+pub struct RRT<'a> {
     start: (f32, f32),
     goal: (f32, f32),
-    obstacles: Vec<ObstacleSphere>,
+    obstacles: Vec<&'a dyn Collision>,
     expand_dis: f32,
     path_resolution: f32,
     goal_sample_rate: u32,
     max_iter: u32,
-    explore_area: Bounds2D,
+    explore_area: RectangleBounds,
     //robot_radius: f32,
     node_list: Vec<RRTNode>,
     rng: ThreadRng,
 }
 
-impl RRT {
+impl<'a> RRT<'a> {
     /// create new "fresh" tree, leave other parameters open
     pub fn new(
         start: (f32, f32),
         goal: (f32, f32),
-        obstacles: Vec<ObstacleSphere>,
+        obstacles: Vec<&'a dyn Collision>,
         expand_dis: f32,
         path_resolution: f32,
         goal_sample_rate: u32,
         max_iter: u32,
-        explore_area: Bounds2D,
+        explore_area: RectangleBounds,
     ) -> Self {
         // build it out with defaults on the tree and robot size
         Self {
@@ -89,7 +77,7 @@ impl RRT {
             let new_node = self.steer(&nearest_node, &rnd_node, self.expand_dis, push_idx);
 
             // do bounds / obstacle checking
-            if !self.explore_area.is_outside_area(&new_node) && !self.is_collision(&new_node) {
+            if self.explore_area.is_collision(new_node.x, new_node.y) && !self.is_collision(&new_node) {
                 self.node_list.push(new_node);
                 push_idx += 1;
             }
@@ -127,7 +115,7 @@ impl RRT {
     /// maybe move this out to a obstacle struct?
     fn is_collision(&self, node: &RRTNode) -> bool {
         self.obstacles.iter().any(|obs| {
-            ((node.x - obs.x).powf(2.0) + (node.y - obs.y).powf(2.0)).sqrt() <= obs.radius
+           obs.is_collision(node.x, node.y) 
         })
     }
 
@@ -192,11 +180,4 @@ impl RRT {
         new_node
     }
 
-}
-
-impl Bounds2D {
-    /// check if a node is outside the bounds
-    pub fn is_outside_area(&self, node: &RRTNode) -> bool {
-        node.x < self.x_min || node.x > self.x_max || node.y < self.y_min || node.y > self.y_max
-    }
 }
