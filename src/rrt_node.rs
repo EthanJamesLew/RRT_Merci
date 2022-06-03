@@ -1,6 +1,5 @@
 /// node of randomly exploring random tree
-
-use crate::math::{Point2D, euclidean_distance};
+use crate::math::{euclidean_distance, Point2D};
 
 pub struct RRTNode {
     pub id: usize,
@@ -11,7 +10,6 @@ pub struct RRTNode {
     pub path: Vec<Point2D>,
     //pub path_y: Vec<f32>,
 }
-
 
 impl RRTNode {
     /// new node (no parent and no path)
@@ -44,8 +42,8 @@ impl RRTNode {
         let dy = self.point.1 - other_node.point.1;
         dy.atan2(dx)
     }
-   
-    /// given a list of nodes, return the index of the node 
+
+    /// given a list of nodes, return the index of the node
     pub fn get_nearest_node_index(&self, node_list: &Vec<RRTNode>) -> Option<usize> {
         // index on zero sized list is None
         if node_list.len() == 0 {
@@ -62,5 +60,5 @@ impl RRTNode {
             }
         }
         Some(min_ind)
-    } 
+    }
 }

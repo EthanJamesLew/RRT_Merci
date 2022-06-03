@@ -8,7 +8,6 @@ pub fn euclidean_distance(pt: &Point2D) -> f32 {
     (pt.0 * pt.0 + pt.1 * pt.1).sqrt()
 }
 
-
 pub fn subtract(pt0: &Point2D, pt1: &Point2D) -> Point2D {
     (pt0.0 - pt1.0, pt0.1 - pt1.1)
 }
@@ -35,5 +34,5 @@ pub fn line_seg_intersects(a1: &Point2D, a2: &Point2D, b1: &Point2D, b2: &Point2
         return false;
     }
 
-    true 
+    true
 }
