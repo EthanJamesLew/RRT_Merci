@@ -1,6 +1,47 @@
 /// node of randomly exploring random tree
 use crate::math::{euclidean_distance, Point2D};
 
+pub trait Node
+where
+    Self: Sized,
+{
+    fn new(pt: Point2D) -> Self;
+    fn get_delta(&self, other_node: &Self) -> (f32, f32);
+
+    /// distance between two nodes
+    fn distance_between(&self, other_node: &Self) -> f32 {
+        let (dx, dy) = self.get_delta(other_node);
+        euclidean_distance(&(dx, dy))
+    }
+
+    /// distance between this node and a position tuple
+    fn distance_between_pos(&self, pos: (f32, f32)) -> f32;
+
+    /// angle between two nodes
+    fn angle_between(&self, other_node: &Self) -> f32 {
+        let (dx, dy) = self.get_delta(other_node);
+        dy.atan2(dx)
+    }
+
+    fn get_nearest_node_index(&self, node_list: &Vec<Self>) -> Option<usize> {
+        // index on zero sized list is None
+        if node_list.len() == 0 {
+            return None;
+        }
+
+        let mut min_dist = std::f32::MAX;
+        let mut min_ind = 0;
+        for (idx, node) in node_list.iter().enumerate() {
+            let dist = self.distance_between(node);
+            if dist < min_dist {
+                min_dist = dist;
+                min_ind = idx;
+            }
+        }
+        Some(min_ind)
+    }
+}
+
 /// RRT star is an identified point and path fragment
 /// it's parent in the tree is identifed, and a full
 /// path can be extracted by traversing the tree
@@ -17,9 +58,9 @@ pub struct RRTStarNode {
     pub cost: f32,
 }
 
-impl RRTNode {
+impl Node for RRTNode {
     /// new node (no parent and no path)
-    pub fn new(pt: Point2D) -> Self {
+    fn new(pt: Point2D) -> Self {
         Self {
             id: 0,
             parent_id: None,
@@ -28,43 +69,33 @@ impl RRTNode {
         }
     }
 
-    /// distance between two nodes
-    pub fn distance_between(&self, other_node: &Self) -> f32 {
+    fn get_delta(&self, other_node: &Self) -> (f32, f32) {
         let dx = self.point.0 - other_node.point.0;
         let dy = self.point.1 - other_node.point.1;
-        euclidean_distance(&(dx, dy))
+        return (dx, dy);
     }
 
     /// distance between this node and a position tuple
-    pub fn distance_between_pos(&self, pos: (f32, f32)) -> f32 {
+    fn distance_between_pos(&self, pos: (f32, f32)) -> f32 {
         let dx = self.point.0 - pos.0;
         let dy = self.point.1 - pos.1;
         euclidean_distance(&(dx, dy))
     }
+}
 
-    /// angle between two nodes
-    pub fn angle_between(&self, other_node: &Self) -> f32 {
-        let dx = self.point.0 - other_node.point.0;
-        let dy = self.point.1 - other_node.point.1;
-        dy.atan2(dx)
+impl Node for RRTStarNode {
+    fn new(pt: Point2D) -> Self {
+        Self {
+            node: RRTNode::new(pt),
+            cost: 0.0,
+        }
     }
 
-    /// given a list of nodes, return the index of the node
-    pub fn get_nearest_node_index(&self, node_list: &Vec<RRTNode>) -> Option<usize> {
-        // index on zero sized list is None
-        if node_list.len() == 0 {
-            return None;
-        }
+    fn get_delta(&self, other_node: &Self) -> (f32, f32) {
+        self.node.get_delta(&other_node.node)
+    }
 
-        let mut min_dist = std::f32::MAX;
-        let mut min_ind = 0;
-        for (idx, node) in node_list.iter().enumerate() {
-            let dist = self.distance_between(node);
-            if dist < min_dist {
-                min_dist = dist;
-                min_ind = idx;
-            }
-        }
-        Some(min_ind)
+    fn distance_between_pos(&self, pos: (f32, f32)) -> f32 {
+        self.node.distance_between_pos(pos)
     }
 }

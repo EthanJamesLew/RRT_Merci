@@ -3,6 +3,7 @@ use crate::bound::*;
 use crate::math::*;
 use crate::path::Path2D;
 use crate::planner::Planner;
+use crate::rrtnode::Node;
 use crate::rrtnode::RRTNode;
 use rand::distributions::Uniform;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
@@ -112,7 +113,7 @@ impl<'a> RRT<'a> {
     }
 
     /// get path from an node in the internal node list
-    fn get_path(&self, goal_node: &RRTNode, mut path: Vec<Point2D>) -> Vec<Point2D> {
+    pub fn get_path(&self, goal_node: &RRTNode, mut path: Vec<Point2D>) -> Vec<Point2D> {
         path.push(goal_node.point);
         match goal_node.parent_id {
             None => return path,
@@ -121,7 +122,7 @@ impl<'a> RRT<'a> {
     }
 
     /// generate random node (exploration), sometimes going for the goal node (goal sampling rate)
-    fn get_random_node(&mut self, end: &RRTNode) -> RRTNode {
+    pub fn get_random_node(&mut self, end: &RRTNode) -> RRTNode {
         // TODO: make this more efficient with rng setup
         let percent = self.rng.gen_range(0..100);
         if percent > self.goal_sample_rate {
@@ -134,7 +135,7 @@ impl<'a> RRT<'a> {
     }
 
     /// grow out a path from node to node
-    fn steer(
+    pub fn steer(
         &self,
         from_node: &RRTNode,
         to_node: &RRTNode,
