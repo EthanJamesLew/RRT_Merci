@@ -1,3 +1,5 @@
+use nalgebra::min;
+
 use crate::bound::{Collision, RectangleBounds};
 use crate::math::Point2D;
 use crate::path::Path2D;
@@ -129,7 +131,7 @@ impl<'a> RRTStar<'a> {
 
     fn find_near_nodes(&self, new_node: &RRTStarNode) -> Vec<usize> {
         let n_nodes = (self.node_list.len() + 1) as f32;
-        let rm = self.connect_circle_dist * (n_nodes.log(2.718) / n_nodes).sqrt();
+        let rm = self.connect_circle_dist * (n_nodes.log(f32::exp(1.0)) / n_nodes).sqrt();
         let r = if rm < self.rrt.expand_dis {
             rm
         } else {
@@ -138,7 +140,7 @@ impl<'a> RRTStar<'a> {
 
         let mut near_inds = Vec::new();
         for (idx, node) in self.node_list.iter().enumerate() {
-            if new_node.node.distance_between(&node.node) < r {
+            if new_node.distance_between(&node) <= r {
                 near_inds.push(idx);
             }
         }
@@ -155,7 +157,7 @@ impl<'a> RRTStar<'a> {
             return None;
         }
 
-        let mut costs = Vec::<f32>::new();
+        let mut costs = Vec::<(f32, usize)>::new();
         for idx in near_inds {
             let near_node = self.node_list.get(*idx).unwrap();
             let t_node = self.rrt.steer(
@@ -166,17 +168,21 @@ impl<'a> RRTStar<'a> {
             );
             // TODO: check t_node
             if !self.is_collision(&t_node.point) {
-                costs.push(self.calc_new_cost(&near_node, &new_node));
+                costs.push((self.calc_new_cost(&near_node, &new_node), *idx));
             } else {
-                costs.push(std::f32::MAX);
+                costs.push((std::f32::MAX, *idx));
             }
         }
-        let min_cost = costs.iter().fold(f32::INFINITY, |a, &b| a.min(b));
-        if min_cost == f32::INFINITY {
-            return None;
-        }
 
-        let min_ind = costs.iter().position(|&x| x == min_cost).unwrap();
+        let mut min_cost = f32::INFINITY;
+        let mut min_ind = 0;
+
+        for (cost, idx) in costs.iter() {
+            if cost < &min_cost {
+                min_cost = *cost;
+                min_ind = *idx;
+            }
+        }
         let min_node = self.node_list.get(min_ind).unwrap();
         // FIXME: id and parent will be off
         let new_node_r =
@@ -214,6 +220,7 @@ impl<'a> RRTStar<'a> {
             if no_collision && improved_cost {
                 self.node_list[*idx].node.point = edge_node.point;
                 self.node_list[*idx].node.path = edge_node.path;
+                //println!("node {:?} rewire parent {:?} -> {:?}", self.node_list[*idx].node.id, self.node_list[*idx].node.parent_id, edge_node.parent_id);
                 self.node_list[*idx].node.parent_id = edge_node.parent_id;
                 self.node_list[*idx].cost = edge_cost;
                 self.propagate_cost_to_leaves(new_node);

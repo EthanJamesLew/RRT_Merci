@@ -1,15 +1,15 @@
 /// RRT Example
 use rrt_merci as rrt;
-use rrt_merci::RRTStar;
 use rrt_merci::Planner;
+use rrt_merci::RRTStar;
 
 fn main() {
     // setup the RRT
     let start = (0.0, 0.0);
-    let goal = (8.0, 0.0);
-    let expand_dis = 1.0;
-    let path_resolution = 0.7;
-    let goal_sample_rate = 50;
+    let goal = (8.0, 0.1);
+    let expand_dis = 0.3;
+    let path_resolution = 0.3;
+    let goal_sample_rate = 90;
     let max_iter = 10000;
     let explore_area = rrt::RectangleBounds {
         min_pt: (0.0, 0.0),
@@ -52,7 +52,7 @@ fn main() {
     //    explore_area,
     //);
 
-    let mut rrt = RRTStar::new( 
+    let mut rrt = RRTStar::new(
         start,
         goal,
         vec![&o0, &o1, &o2, &o3],
@@ -61,13 +61,13 @@ fn main() {
         goal_sample_rate,
         max_iter,
         explore_area,
-        0.5,
-        true
+        100.0,
+        true,
     );
 
     // get path
     let path_res = rrt.plan().expect("path not found!");
-    let path = path_res.path_smoothing_obstacle(&rrt.rrt.obstacles, 200);
+    let path = path_res.path_smoothing_obstacle(&rrt.rrt.obstacles, 0);
 
     for point in path.0 {
         println!("{:?} {:?}", point.0, point.1);
