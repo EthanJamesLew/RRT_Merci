@@ -1,14 +1,20 @@
 /// node of randomly exploring random tree
 use crate::math::{euclidean_distance, Point2D};
 
+/// RRT star is an identified point and path fragment
+/// it's parent in the tree is identifed, and a full
+/// path can be extracted by traversing the tree
 pub struct RRTNode {
     pub id: usize,
     pub parent_id: Option<usize>,
     pub point: Point2D,
-    //pub x: f32,
-    //pub y: f32,
     pub path: Vec<Point2D>,
-    //pub path_y: Vec<f32>,
+}
+
+/// node for rrt star--normal node + cost
+pub struct RRTStarNode {
+    pub node: RRTNode,
+    pub cost: f32,
 }
 
 impl RRTNode {
