@@ -1,45 +1,47 @@
 /// node of randomly exploring random tree
+
+use crate::math::{Point2D, euclidean_distance};
+
 pub struct RRTNode {
     pub id: usize,
     pub parent_id: Option<usize>,
-    pub x: f32,
-    pub y: f32,
-    pub path_x: Vec<f32>,
-    pub path_y: Vec<f32>,
+    pub point: Point2D,
+    //pub x: f32,
+    //pub y: f32,
+    pub path: Vec<Point2D>,
+    //pub path_y: Vec<f32>,
 }
 
 
 impl RRTNode {
     /// new node (no parent and no path)
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new(pt: Point2D) -> Self {
         Self {
             id: 0,
             parent_id: None,
-            x: x,
-            y: y,
-            path_x: Vec::<f32>::with_capacity(0),
-            path_y: Vec::<f32>::with_capacity(0)
+            point: pt,
+            path: Vec::<Point2D>::with_capacity(0),
         }
     }
 
     /// distance between two nodes
     pub fn distance_between(&self, other_node: &Self) -> f32 {
-        let dx = self.x - other_node.x;
-        let dy = self.y - other_node.y;
-        (dx * dx + dy * dy).sqrt()
+        let dx = self.point.0 - other_node.point.0;
+        let dy = self.point.1 - other_node.point.1;
+        euclidean_distance(&(dx, dy))
     }
 
     /// distance between this node and a position tuple
     pub fn distance_between_pos(&self, pos: (f32, f32)) -> f32 {
-        let dx = self.x - pos.0;
-        let dy = self.y - pos.1;
-        (dx * dx + dy * dy).sqrt()
+        let dx = self.point.0 - pos.0;
+        let dy = self.point.1 - pos.1;
+        euclidean_distance(&(dx, dy))
     }
 
     /// angle between two nodes
     pub fn angle_between(&self, other_node: &Self) -> f32 {
-        let dx = self.x - other_node.x;
-        let dy = self.y - other_node.y;
+        let dx = self.point.0 - other_node.point.0;
+        let dy = self.point.1 - other_node.point.1;
         dy.atan2(dx)
     }
    

@@ -4,15 +4,22 @@
 /// TODO: add methods to node (distance between) and obstacles (does collide)
 mod rrt_node;
 pub use rrt_node::*;
-mod bounds;
-pub use bounds::*;
+
+pub mod math;
+use math::{Point2D, Path2D};
+
+mod bound;
+pub use bound::*;
+
 use rand::distributions::Uniform;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
+use std::mem;
+
 /// RRT Configuration Object
 pub struct RRT<'a> {
-    start: (f32, f32),
-    goal: (f32, f32),
+    start: Point2D,
+    goal: Point2D,
     obstacles: Vec<&'a dyn Collision>,
     expand_dis: f32,
     path_resolution: f32,
@@ -25,10 +32,10 @@ pub struct RRT<'a> {
 }
 
 impl<'a> RRT<'a> {
-    /// create new "fresh" tree, leave other parameters open
+    /// create new tree, leave other parameters open
     pub fn new(
-        start: (f32, f32),
-        goal: (f32, f32),
+        start: Point2D,
+        goal: Point2D,
         obstacles: Vec<&'a dyn Collision>,
         expand_dis: f32,
         path_resolution: f32,
@@ -53,10 +60,10 @@ impl<'a> RRT<'a> {
     }
 
     /// RRT Path Planning
-    pub fn planning(&mut self) -> Option<Vec<(f32, f32)>> {
+    pub fn planning(&mut self) -> Option<Path2D> {
         // start by introdcing the start node to the node list
-        let start_node = RRTNode::new(self.start.0, self.start.1);
-        let end_node = RRTNode::new(self.goal.0, self.goal.1);        
+        let start_node = RRTNode::new(self.start);
+        let end_node = RRTNode::new(self.goal);        
         self.node_list.push(start_node);
 
         // we are building the identifiers to match their position in the array -- this is somewhat fickle,
@@ -77,7 +84,7 @@ impl<'a> RRT<'a> {
             let new_node = self.steer(&nearest_node, &rnd_node, self.expand_dis, push_idx);
 
             // do bounds / obstacle checking
-            if self.explore_area.is_collision(new_node.x, new_node.y) && !self.is_collision(&new_node) {
+            if self.explore_area.is_collision(&new_node.point) && !self.is_collision(&new_node) {
                 self.node_list.push(new_node);
                 push_idx += 1;
             }
@@ -95,7 +102,7 @@ impl<'a> RRT<'a> {
 
         // if goal is met, produce the path
         if achieve_goal {
-            Some(self.get_path(self.node_list.last().unwrap(), Vec::<(f32, f32)>::new()))
+            Some(Path2D(self.get_path(self.node_list.last().unwrap(), Vec::<Point2D>::new())))
         } else {
             None
         }
@@ -103,8 +110,8 @@ impl<'a> RRT<'a> {
     }
 
     /// get path from an node in the internal node list
-    fn get_path(&self, goal_node: &RRTNode, mut path: Vec<(f32, f32)>) -> Vec<(f32, f32)> {
-        path.push((goal_node.x, goal_node.y));
+    fn get_path(&self, goal_node: &RRTNode, mut path: Vec<Point2D>) -> Vec<Point2D> {
+        path.push(goal_node.point);
         match goal_node.parent_id {
             None => return path,
             Some(idx) => return self.get_path(self.node_list.get(idx).unwrap(), path)
@@ -115,7 +122,7 @@ impl<'a> RRT<'a> {
     /// maybe move this out to a obstacle struct?
     fn is_collision(&self, node: &RRTNode) -> bool {
         self.obstacles.iter().any(|obs| {
-           obs.is_collision(node.x, node.y) 
+           obs.is_collision(&node.point) 
         })
     }
 
@@ -124,11 +131,11 @@ impl<'a> RRT<'a> {
         // TODO: make this more efficient with rng setup
         let percent = self.rng.gen_range(0..100);
         if percent > self.goal_sample_rate {
-            RRTNode::new(end.x, end.y)
+            RRTNode::new(end.point)
         } else {
-            let uniform_x = Uniform::new(self.explore_area.x_min, self.explore_area.x_max);
-            let uniform_y = Uniform::new(self.explore_area.y_min, self.explore_area.y_max);
-            RRTNode::new(self.rng.sample(&uniform_x), self.rng.sample(&uniform_y))
+            let uniform_x = Uniform::new(self.explore_area.min_pt.0, self.explore_area.max_pt.0);
+            let uniform_y = Uniform::new(self.explore_area.min_pt.0, self.explore_area.max_pt.1);
+            RRTNode::new((self.rng.sample(&uniform_x), self.rng.sample(&uniform_y)))
         }
     }
 
@@ -150,34 +157,87 @@ impl<'a> RRT<'a> {
         let mut new_node = RRTNode {
             id: index,
             parent_id: Some(from_node.id),
-            x: from_node.x,
-            y: from_node.y,
-            path_x: Vec::<f32>::with_capacity(nexpand as usize),
-            path_y: Vec::<f32>::with_capacity(nexpand as usize),
+            point: from_node.point,
+            path: Vec::<Point2D>::with_capacity(nexpand as usize),
         };
-        new_node.path_x.push(from_node.x);
-        new_node.path_y.push(from_node.y);
+        new_node.path.push(from_node.point);
 
         // expand out the node
         for _idx in 0..nexpand {
-            let new_x = new_node.x + self.path_resolution * theta.cos();
-            let new_y = new_node.y + self.path_resolution * theta.sin();
-            new_node.path_x.push(new_x);
-            new_node.path_y.push(new_y);
-            new_node.x = new_x;
-            new_node.y = new_y;
+            let new_x = new_node.point.0 + self.path_resolution * theta.cos();
+            let new_y = new_node.point.1 + self.path_resolution * theta.sin();
+            new_node.path.push((new_x, new_y));
+            new_node.point = (new_x, new_y);
         }
 
         // if path is within resolution to the final node, add that
         let dist1 = new_node.distance_between(&to_node);
         if dist1 <= self.path_resolution {
-            new_node.path_x.push(to_node.x);
-            new_node.path_y.push(to_node.y);
-            new_node.x = to_node.x;
-            new_node.y = to_node.y;
+            new_node.path.push(to_node.point);
+            new_node.point = to_node.point;
         }
 
         new_node
+    }
+    
+    pub fn path_smoothing(&self, path: &Path2D, max_iter: u32) -> Path2D {
+        let mut le = path.path_length();
+        let mut rng = thread_rng();
+        let mut path = Path2D(path.0.to_vec());
+
+
+        for _idx in 0..max_iter {
+            le = path.path_length();
+            let uniform = Uniform::new(0.0, le);
+            
+            let mut p0 = rng.sample(&uniform); 
+            let mut p1 = rng.sample(&uniform); 
+
+            if p1 < p0 {
+                mem::swap(&mut p0, &mut p1);
+            }
+
+            let first = path.get_target_point(p0);
+            let second = path.get_target_point(p1);
+
+            if first.1 <= 0 || second.1 <= 0 {
+                continue;
+            }
+
+            if (second.1 + 1) > path.0.len() {
+                continue;
+            }
+
+            if second.1 == first.1 {
+                continue;
+            }
+
+            let mut any_collisions = false;
+            for obs in self.obstacles.iter() {
+                if obs.is_collision_segment(&first.0, &second.0) {
+                    any_collisions = true;
+                    break;
+                }
+            }
+            if any_collisions {
+                continue;
+            }
+
+            let mut new_path = Path2D(Vec::<Point2D>::new());
+            for idx in 0..(first.1 + 1) {
+                let val  = path.0.get(idx).unwrap();
+                new_path.0.push((val.0, val.1));
+            }
+            new_path.0.push(first.0);
+            new_path.0.push(second.0);
+            for idx in (second.1 + 1)..path.0.len() {
+                let val  = path.0.get(idx).unwrap();
+                new_path.0.push((val.0, val.1));
+            }
+            path = new_path;
+        }
+
+        path
     }
 
 }
