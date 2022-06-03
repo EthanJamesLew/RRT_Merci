@@ -10,9 +10,7 @@ use ncollide2d::query::contact_ball_convex_polyhedron;
 /// for all collisions, we can determine if a point is inside their area
 pub trait Collision {
     fn is_collision(&self, pt: &Point2D) -> bool;
-    fn is_collision_segment(&self, start: &Point2D, end: &Point2D) -> bool {
-        false
-    }
+    fn is_collision_segment(&self, start: &Point2D, end: &Point2D) -> bool; 
 }
 
 /// a simple rectangle described by min / max values
@@ -86,15 +84,15 @@ impl Collision for ConvexPolygonBounds {
 
 impl Collision for RectangleBounds {
     fn is_collision(&self, pt: &Point2D) -> bool {
-        pt.0 > self.min_pt.0 || pt.0 < self.max_pt.0 || pt.1 > self.min_pt.1 || pt.1 < self.max_pt.1
+        pt.0 > self.min_pt.0 && pt.0 < self.max_pt.0 && pt.1 > self.min_pt.1 && pt.1 < self.max_pt.1
     }
 
     fn is_collision_segment(&self, start: &Point2D, end: &Point2D) -> bool {
         let p0 = (self.min_pt.0, self.max_pt.1);
         let p1 = (self.max_pt.0, self.min_pt.1);
-        line_seg_intersects(&start, &end, &self.min_pt, &p1) ||
         line_seg_intersects(&start, &end, &self.min_pt, &p0) ||
-        line_seg_intersects(&start, &end, &self.max_pt, &p1) ||
+        line_seg_intersects(&start, &end, &self.min_pt, &p1) ||
+        line_seg_intersects(&start, &end, &self.max_pt, &p0) ||
         line_seg_intersects(&start, &end, &self.max_pt, &p1)
     }
 }

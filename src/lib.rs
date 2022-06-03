@@ -6,7 +6,10 @@ mod rrt_node;
 pub use rrt_node::*;
 
 pub mod math;
-use math::{Point2D, Path2D};
+use math::{Point2D};
+
+pub mod path;
+use path::Path2D;
 
 mod bound;
 pub use bound::*;
@@ -85,6 +88,7 @@ impl<'a> RRT<'a> {
 
             // do bounds / obstacle checking
             if self.explore_area.is_collision(&new_node.point) && !self.is_collision(&new_node) {
+
                 self.node_list.push(new_node);
                 push_idx += 1;
             }
@@ -181,13 +185,12 @@ impl<'a> RRT<'a> {
     }
     
     pub fn path_smoothing(&self, path: &Path2D, max_iter: u32) -> Path2D {
-        let mut le = path.path_length();
         let mut rng = thread_rng();
         let mut path = Path2D(path.0.to_vec());
 
 
         for _idx in 0..max_iter {
-            le = path.path_length();
+            let le = path.path_length();
             let uniform = Uniform::new(0.0, le);
             
             let mut p0 = rng.sample(&uniform); 
