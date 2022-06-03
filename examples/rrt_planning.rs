@@ -6,11 +6,11 @@ use rrt_merci::RRTStar;
 fn main() {
     // setup the RRT
     let start = (0.0, 0.0);
-    let goal = (8.0, 0.1);
-    let expand_dis = 0.3;
-    let path_resolution = 0.3;
-    let goal_sample_rate = 90;
-    let max_iter = 10000;
+    let goal = (6.0, 9.5);
+    let expand_dis = 0.4;
+    let path_resolution = 0.2;
+    let goal_sample_rate = 95;
+    let max_iter = 5000;
     let explore_area = rrt::RectangleBounds {
         min_pt: (0.0, 0.0),
         max_pt: (12.0, 10.0),
@@ -61,15 +61,16 @@ fn main() {
         goal_sample_rate,
         max_iter,
         explore_area,
-        100.0,
+        100000.0,
         true,
     );
 
     // get path
     let path_res = rrt.plan().expect("path not found!");
-    let path = path_res.path_smoothing_obstacle(&rrt.rrt.obstacles, 0);
+    let path = path_res.path_smoothing_obstacle(&rrt.rrt.obstacles, 1000);
 
-    for point in path.0 {
-        println!("{:?} {:?}", point.0, point.1);
-    }
+    println!("{:?}", rrt.node_list);
+    //for point in path.0 {
+    //    println!("{:?} {:?}", point.0, point.1);
+    //}
 }

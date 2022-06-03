@@ -129,7 +129,7 @@ impl<'a> RRT<'a> {
             RRTNode::new(end.point)
         } else {
             let uniform_x = Uniform::new(self.explore_area.min_pt.0, self.explore_area.max_pt.0);
-            let uniform_y = Uniform::new(self.explore_area.min_pt.0, self.explore_area.max_pt.1);
+            let uniform_y = Uniform::new(self.explore_area.min_pt.1, self.explore_area.max_pt.1);
             RRTNode::new((self.rng.sample(&uniform_x), self.rng.sample(&uniform_y)))
         }
     }

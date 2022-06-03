@@ -14,7 +14,7 @@ pub struct RRTStar<'a> {
     pub rrt: RRT<'a>,
     pub connect_circle_dist: f32,
     pub search_until_max: bool,
-    node_list: Vec<RRTStarNode>,
+    pub node_list: Vec<RRTStarNode>,
 }
 
 /// planner elements of rrtstar
