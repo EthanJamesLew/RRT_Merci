@@ -1,3 +1,4 @@
+/// Rapidly Exploring Random Trees (Simple)
 use crate::bound::*;
 use crate::math::*;
 use crate::path::Path2D;
@@ -16,7 +17,6 @@ pub struct RRT<'a> {
     pub goal_sample_rate: u32,
     pub max_iter: u32,
     pub explore_area: RectangleBounds,
-    //robot_radius: f32,
     pub node_list: Vec<RRTNode>,
     rng: ThreadRng,
 }
