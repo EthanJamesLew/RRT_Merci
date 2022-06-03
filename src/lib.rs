@@ -10,7 +10,9 @@ pub mod math;
 pub mod path;
 pub mod planner;
 pub mod rrt;
+pub mod rrtstar;
 
 pub use bound::*;
 pub use planner::Planner;
 pub use rrt::RRT;
+pub use rrtstar::RRTStar;
