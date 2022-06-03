@@ -1,5 +1,6 @@
 /// RRT Example
 use rrt_merci as rrt;
+use rrt_merci::Planner;
 
 fn main() {
     // setup the RRT
@@ -51,7 +52,7 @@ fn main() {
     );
 
     // get path
-    let path_res = rrt.planning().expect("path not found!");
+    let path_res = rrt.plan().expect("path not found!");
     let path = path_res.path_smoothing_obstacle(&rrt.obstacles, 1000);
 
     for point in path.0 {

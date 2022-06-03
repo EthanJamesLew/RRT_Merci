@@ -8,6 +8,7 @@ pub fn euclidean_distance(pt: &Point2D) -> f32 {
     (pt.0 * pt.0 + pt.1 * pt.1).sqrt()
 }
 
+// point whose elements are a vector subtraction of two points
 pub fn subtract(pt0: &Point2D, pt1: &Point2D) -> Point2D {
     (pt0.0 - pt1.0, pt0.1 - pt1.1)
 }
