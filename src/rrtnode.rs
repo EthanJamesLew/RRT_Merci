@@ -45,6 +45,7 @@ where
 /// RRT star is an identified point and path fragment
 /// it's parent in the tree is identifed, and a full
 /// path can be extracted by traversing the tree
+#[derive(Debug, Clone)]
 pub struct RRTNode {
     pub id: usize,
     pub parent_id: Option<usize>,
@@ -53,6 +54,7 @@ pub struct RRTNode {
 }
 
 /// node for rrt star--normal node + cost
+#[derive(Debug, Clone)]
 pub struct RRTStarNode {
     pub node: RRTNode,
     pub cost: f32,

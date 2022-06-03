@@ -9,6 +9,9 @@ pub trait Planner<'a> {
     /// determine if collision occurs in the obstacle list
     /// maybe move this out to a obstacle struct?
     fn is_collision(&self, point: &Point2D) -> bool {
+        if self.obstacles().len() == 0 {
+            return false;
+        }
         self.obstacles().iter().any(|obs| obs.is_collision(&point))
     }
 

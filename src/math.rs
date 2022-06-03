@@ -1,6 +1,5 @@
 /// basic math methods and math types
 /// TODO: put this in a module?
-
 pub type Point2D = (f32, f32);
 
 // euclidean distance of point to the origin
