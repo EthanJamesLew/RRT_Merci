@@ -1,17 +1,12 @@
 [package]
-name = "rrt_merci"
+name = "mercipy"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "mercipy"
+crate-type = ["cdylib"]
 
 [dependencies]
-rand = "0.8.0"
-nalgebra = "0.31"
-ncollide2d = "0.33"
-
-
-[workspace]
-members = [
-	"mercipy",
-]
+pyo3 = { version = "0.16.3", features = ["extension-module"] }
