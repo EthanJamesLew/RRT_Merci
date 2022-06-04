@@ -1,12 +1,24 @@
+use rrt::path::Path2D;
+use rrt::RRTNode;
 /// RRT Example
 use rrt_merci as rrt;
+use rrt_merci::math::Point2D;
 use rrt_merci::Planner;
 use rrt_merci::RRTStar;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+#[derive(Serialize, Deserialize)]
+struct RRTReturn {
+    tree: Vec<rrt::RRTNode>,
+    path: Path2D,
+    smooth_path: Path2D,
+}
 
 fn main() {
     // setup the RRT
     let start = (0.0, 0.0);
-    let goal = (6.0, 9.5);
+    let goal = (8.0, 0.0);
     let expand_dis = 0.4;
     let path_resolution = 0.2;
     let goal_sample_rate = 95;
@@ -66,11 +78,18 @@ fn main() {
     );
 
     // get path
-    let path_res = rrt.plan().expect("path not found!");
+    let path_res = rrt.rrt.plan().expect("path not found!");
     let path = path_res.path_smoothing_obstacle(&rrt.rrt.obstacles, 1000);
 
-    println!("{:?}", rrt.node_list);
-    //for point in path.0 {
-    //    println!("{:?} {:?}", point.0, point.1);
-    //}
+    //let node_tree: Vec<RRTNode> = rrt.node_list.iter().map(|n| n.node.clone()).collect();
+    let node_tree: Vec<RRTNode> = rrt.rrt.node_list;
+
+    let ret = RRTReturn {
+        tree: node_tree,
+        smooth_path: path,
+        path: path_res,
+    };
+
+    let ret_json = serde_json::json!(ret);
+    println!("{}", ret_json.to_string());
 }

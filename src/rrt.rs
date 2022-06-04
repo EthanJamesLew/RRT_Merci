@@ -54,8 +54,21 @@ impl Planner<'_> for RRT<'_> {
             let new_node = self.steer(&nearest_node, &rnd_node, self.expand_dis, push_idx);
 
             // do bounds / obstacle checking
+            let edge_collision_occured = {
+                match new_node.parent_id {
+                    None => false,
+                    Some(parent_id) => {
+                        let parent_node = self
+                            .node_list
+                            .get(parent_id as usize)
+                            .expect("RRT Parent Node failed to get from node list");
+                        self.is_collision_segment(&parent_node.point, &new_node.point)
+                    }
+                }
+            };
             if self.explore_area.is_collision(&new_node.point)
                 && !self.is_collision(&new_node.point)
+                && !edge_collision_occured
             {
                 self.node_list.push(new_node);
                 push_idx += 1;

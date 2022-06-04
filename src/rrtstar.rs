@@ -1,5 +1,3 @@
-use nalgebra::min;
-
 use crate::bound::{Collision, RectangleBounds};
 use crate::math::Point2D;
 use crate::path::Path2D;
@@ -62,7 +60,9 @@ impl Planner<'_> for RRTStar<'_> {
             };
             let new_node_c = new_node.clone();
 
-            if !self.is_collision(&new_node.node.point) {
+            // TODO: move this edge collision to a trai somewhere?
+            let edge_collision_occured = self.is_collision_parent(&new_node);
+            if !self.is_collision(&new_node.node.point) && !edge_collision_occured {
                 let near_inds = self.find_near_nodes(&new_node);
                 let node_with_updated_parent = self.choose_parent(&new_node, &near_inds, push_idx);
                 if node_with_updated_parent.is_some() {
@@ -129,6 +129,32 @@ impl<'a> RRTStar<'a> {
         }
     }
 
+    fn is_collision_parent(&self, node: &RRTStarNode) -> bool {
+        match node.node.parent_id {
+            None => false,
+            Some(parent_id) => {
+                let parent_node = self
+                    .node_list
+                    .get(parent_id as usize)
+                    .expect("RRT Parent Node failed to get from node list");
+                self.is_collision_segment(&parent_node.node.point, &node.node.point)
+            }
+        }
+    }
+
+    fn is_collision_parent_rrt(&self, node: &RRTNode) -> bool {
+        match node.parent_id {
+            None => false,
+            Some(parent_id) => {
+                let parent_node = self
+                    .node_list
+                    .get(parent_id as usize)
+                    .expect("RRT Parent Node failed to get from node list");
+                self.is_collision_segment(&parent_node.node.point, &node.point)
+            }
+        }
+    }
+
     fn find_near_nodes(&self, new_node: &RRTStarNode) -> Vec<usize> {
         let n_nodes = (self.node_list.len() + 1) as f32;
         let rm = self.connect_circle_dist * (n_nodes.log(f32::exp(1.0)) / n_nodes).sqrt();
@@ -167,7 +193,8 @@ impl<'a> RRTStar<'a> {
                 node_id,
             );
             // TODO: check t_node
-            if !self.is_collision(&t_node.point) {
+            let edge_collision_occured = self.is_collision_parent_rrt(&t_node);
+            if !self.is_collision(&t_node.point) && !edge_collision_occured {
                 costs.push((self.calc_new_cost(&near_node, &new_node), *idx));
             } else {
                 costs.push((std::f32::MAX, *idx));
@@ -215,7 +242,9 @@ impl<'a> RRTStar<'a> {
                 (edge_node, edge_cost, improved_cost)
             };
 
-            let no_collision = !self.is_collision(&edge_node.point);
+            // TODO: add edge collision?
+            let edge_collide = self.is_collision_segment(&edge_node.point, &new_node.node.point);
+            let no_collision = !self.is_collision(&edge_node.point) && !edge_collide;
 
             if no_collision && improved_cost {
                 self.node_list[*idx].node.point = edge_node.point;
