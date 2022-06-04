@@ -15,6 +15,16 @@ pub trait Planner<'a> {
         self.obstacles().iter().any(|obs| obs.is_collision(&point))
     }
 
+    /// determine is a collision occurs in line segment between two points
+    fn is_collision_segment(&self, pointa: &Point2D, pointb: &Point2D) -> bool {
+        if self.obstacles().len() == 0 {
+            return false;
+        }
+        self.obstacles()
+            .iter()
+            .any(|obs| obs.is_collision_segment(&pointa, &pointb))
+    }
+
     /// planners may or may not return a path (a path may not exist, or the implementation isn't able to find one)
     fn plan(&mut self) -> Option<Path2D>;
 }

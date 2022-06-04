@@ -9,7 +9,8 @@ edition = "2021"
 rand = "0.8.0"
 nalgebra = "0.31"
 ncollide2d = "0.33"
-
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [workspace]
 members = [
