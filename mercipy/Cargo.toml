@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.16.3", features = ["extension-module"] }
+rrt_merci = { path = ".." }
