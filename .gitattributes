@@ -1,1 +1,2 @@
 *.ipynb linguist-detectable=false
+mercipy/pythonrobotics/rrt.py linguist-detectable=false
