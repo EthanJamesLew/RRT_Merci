@@ -126,7 +126,7 @@ impl Collision for CircleBounds {
         let b = -(x2 - x1);
         let c = y2 * (x2 - x1) - x2 * (y2 - y1);
 
-        let d = (a * self.center_pt.0 + b * self.center_pt.1 + c).abs() / (a * a + b * b).sqrt();
-        d <= self.radius
+        let d = (a * self.center_pt.0 + b * self.center_pt.1 + c).abs() / (a * a + b * b);
+        d <= (self.radius * self.radius)
     }
 }
