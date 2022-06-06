@@ -1,5 +1,5 @@
 # RRT_Merci
-RRT Implementation used for GRAIC Racing Competition
+RRT Implementation to be used for the GRAIC Competition
 
 | Rapidly Exploring Random Tree (RRT)    | RRT*                                            |
 |----------------------------------------|-------------------------------------------------|
