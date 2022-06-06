@@ -138,7 +138,7 @@ impl<'a> RRT<'a> {
     pub fn get_random_node(&mut self, end: &RRTNode) -> RRTNode {
         // TODO: make this more efficient with rng setup
         let percent = self.rng.gen_range(0..100);
-        if percent > self.goal_sample_rate {
+        if percent <= self.goal_sample_rate {
             RRTNode::new(end.point)
         } else {
             let uniform_x = Uniform::new(self.explore_area.min_pt.0, self.explore_area.max_pt.0);

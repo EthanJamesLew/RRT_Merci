@@ -26,7 +26,11 @@ The RRT implementations are designed for 2D vehicle racing, containing
     * Uniform
     * [TODO] Sobol
 
-## Citations
+## Benchmarks
+
+We have a crude [benchmarks](./notebooks/rrt-benchmark.ipynb) notebook. We see that for RRT implementations, MerciPy achieves planning **1000s of times faster than an existing python implementation**.
+
+## References 
 
 Algorithms were taken from their respective papers. Also, Pythonrobotics implementations were referenced.
 
@@ -41,4 +45,4 @@ Algorithms were taken from their respective papers. Also, Pythonrobotics impleme
 
 ## Python Bindings
 
-[TODO] There will be python bindings to the rust implementations so it can be run on the GRAIC scenarios.
+See the [mercipy](./mercipy) folder.

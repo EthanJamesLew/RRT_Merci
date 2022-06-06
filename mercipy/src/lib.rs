@@ -121,12 +121,12 @@ fn plan_rrt(
     let path_res = rrt.plan();
     match path_res {
         Some(p) => {
-            let path = p.path_smoothing_obstacle(&rrt.obstacles, 1000);
+            //let path = p.path_smoothing_obstacle(&rrt.obstacles, 1000);
 
             //let node_tree: Vec<RRTNode> = rrt.node_list.iter().map(|n| n.node.clone()).collect();
             let node_tree = rrt.node_list;
 
-            Some(path.0)
+            Some(p.0)
             //TreePlannerResult {
             //    node_tree: node_tree,
             //    smooth_path: Some(path.0),
