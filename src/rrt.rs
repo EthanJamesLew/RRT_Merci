@@ -1,3 +1,4 @@
+use crate::PathTree;
 /// Rapidly Exploring Random Trees (Simple)
 use crate::bound::*;
 use crate::math::*;
@@ -18,7 +19,7 @@ pub struct RRT<'a> {
     pub goal_sample_rate: u32,
     pub max_iter: u32,
     pub explore_area: RectangleBounds,
-    pub node_list: Vec<RRTNode>,
+    pub node_tree: PathTree,
     rng: ThreadRng,
 }
 
@@ -33,7 +34,7 @@ impl Planner<'_> for RRT<'_> {
         // start by introdcing the start node to the node list
         let start_node = RRTNode::new(self.start);
         let end_node = RRTNode::new(self.goal);
-        self.node_list.push(start_node);
+        self.node_tree.add_node(start_node);
 
         // we are building the identifiers to match their position in the array -- this is somewhat fickle,
         // but allows us traverse the tree efficiently without needing to store borrows of the object and
@@ -44,11 +45,11 @@ impl Planner<'_> for RRT<'_> {
         // now start the tree search...
         for _idx in 1..=self.max_iter {
             let rnd_node = self.get_random_node(&end_node);
-            let nearest_ind = rnd_node
-                .get_nearest_node_index(&self.node_list)
+            let nearest_ind = self.node_tree
+                .get_nearest_node_index(&rnd_node)
                 .expect("node list should have a size > 0");
             let nearest_node = self
-                .node_list
+                .node_tree
                 .get(nearest_ind)
                 .expect("RRT Nearest Node failed to get from node list");
             let new_node = self.steer(&nearest_node, &rnd_node, self.expand_dis, push_idx);
@@ -59,7 +60,7 @@ impl Planner<'_> for RRT<'_> {
                     None => false,
                     Some(parent_id) => {
                         let parent_node = self
-                            .node_list
+                            .node_tree
                             .get(parent_id as usize)
                             .expect("RRT Parent Node failed to get from node list");
                         self.is_collision_segment(&parent_node.point, &new_node.point)
@@ -70,16 +71,16 @@ impl Planner<'_> for RRT<'_> {
                 && !self.is_collision(&new_node.point)
                 && !edge_collision_occured
             {
-                self.node_list.push(new_node);
+                self.node_tree.add_node(new_node);
                 push_idx += 1;
             }
 
             // check if we've reached the goal
             // terminating condition
-            let last_node = self.node_list.last().unwrap();
+            let last_node = self.node_tree.last().unwrap();
             if last_node.distance_between_pos(self.goal) <= self.expand_dis {
                 let final_node = self.steer(&last_node, &end_node, self.expand_dis, push_idx);
-                self.node_list.push(final_node);
+                self.node_tree.add_node(final_node);
                 achieve_goal = true;
                 break;
             }
@@ -87,8 +88,8 @@ impl Planner<'_> for RRT<'_> {
 
         // if goal is met, produce the path
         if achieve_goal {
-            Some(Path2D(self.get_path(
-                self.node_list.last().unwrap(),
+            Some(Path2D(self.node_tree.get_path(
+                self.node_tree.last().unwrap(),
                 Vec::<Point2D>::new(),
             )))
         } else {
@@ -120,17 +121,8 @@ impl<'a> RRT<'a> {
             max_iter: max_iter,
             explore_area: explore_area,
             //robot_radius: 0.0,
-            node_list: Vec::<RRTNode>::with_capacity(max_iter as usize),
+            node_tree: PathTree::new(),
             rng: thread_rng(),
-        }
-    }
-
-    /// get path from an node in the internal node list
-    pub fn get_path(&self, goal_node: &RRTNode, mut path: Vec<Point2D>) -> Vec<Point2D> {
-        path.push(goal_node.point);
-        match goal_node.parent_id {
-            None => return path,
-            Some(idx) => return self.get_path(self.node_list.get(idx).unwrap(), path),
         }
     }
 

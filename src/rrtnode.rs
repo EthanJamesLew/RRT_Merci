@@ -2,6 +2,7 @@
 use crate::math::{euclidean_distance, Point2D};
 use serde::{Deserialize, Serialize};
 
+
 pub trait Node
 where
     Self: Sized,
@@ -24,6 +25,8 @@ where
         dy.atan2(dx)
     }
 
+    /// warning: this is slow...
+    /// PathTree uses an accelerated data structure
     fn get_nearest_node_index(&self, node_list: &Vec<Self>) -> Option<usize> {
         // index on zero sized list is None
         if node_list.len() == 0 {

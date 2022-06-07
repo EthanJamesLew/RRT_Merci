@@ -16,3 +16,6 @@ pub use bound::*;
 pub use planner::Planner;
 pub use rrt::RRT;
 pub use rrtstar::RRTStar;
+
+pub mod tree;
+pub use tree::*;

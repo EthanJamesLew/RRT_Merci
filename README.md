@@ -28,7 +28,7 @@ The RRT implementations are designed for 2D vehicle racing, containing
 
 ## Benchmarks
 
-We have a crude [benchmarks](./notebooks/rrt-benchmark.ipynb) notebook. We see that for RRT implementations, MerciPy achieves planning **1000s of times faster than an existing python implementation**.
+We have a crude [benchmarks](./notebooks/rrt-benchmark.ipynb) notebook. We see that for RRT implementations, MerciPy achieves planning **10s to 100s of times faster than an existing python implementation**.
 
 ## References 
 
