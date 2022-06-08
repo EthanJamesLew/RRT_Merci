@@ -1,5 +1,5 @@
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
-use rrt_merci::{bound as rbound, rrt, Collision, Planner};
+use rrt_merci::{bound as rbound, rrt, rrtstar, Collision, Planner};
 
 trait Collider {
     fn get_collider(&self) -> &dyn Collision;
@@ -89,13 +89,6 @@ impl Collider for ConvexPolygonBounds {
     }
 }
 
-#[pyclass]
-struct TreePlannerResult {
-    node_tree: Vec<rrt_merci::RRTNode>,
-    path: Option<Vec<(f32, f32)>>,
-    smooth_path: Option<Vec<(f32, f32)>>,
-}
-
 #[pyfunction]
 fn plan_rrt(
     start: (f32, f32),
@@ -135,24 +128,61 @@ fn plan_rrt(
     let path_res = rrt.plan();
     match path_res {
         Some(p) => {
-            //let path = p.path_smoothing_obstacle(&rrt.obstacles, 1000);
-
-            //let node_tree: Vec<RRTNode> = rrt.node_list.iter().map(|n| n.node.clone()).collect();
-
             Some(p.0)
-            //TreePlannerResult {
-            //    node_tree: node_tree,
-            //    smooth_path: Some(path.0),
-            //    path: Some(p.0),
-            //}
         }
         None => {
             None
-            //TreePlannerResult {
-            //    node_tree: rrt.node_list,
-            //    smooth_path: None,
-            //    path: None
-            //}
+        }
+    }
+}
+
+#[pyfunction]
+fn plan_rrtstar(
+    start: (f32, f32),
+    goal: (f32, f32),
+    obstacles: Vec<(f32, f32, f32)>,
+    expand_dis: f32,
+    path_resolution: f32,
+    goal_sample_rate: u32,
+    max_iter: u32,
+    explore_area: ((f32, f32), (f32, f32)),
+    connect_circle_dist: f32,
+    search_until_max: bool,
+) -> Option<Vec<(f32, f32)>> {
+    let mut new_obstacles = Vec::<&dyn Collision>::new();
+    let new_sphere: Vec<rbound::CircleBounds> = obstacles
+        .iter()
+        .map(|(x, y, r)| rbound::CircleBounds {
+            center_pt: (*x, *y),
+            radius: *r,
+        })
+        .collect();
+    for oi in new_sphere.iter() {
+        new_obstacles.push(oi);
+    }
+    let new_explore_area = rbound::RectangleBounds {
+        min_pt: explore_area.0,
+        max_pt: explore_area.1,
+    };
+    let mut rrt = rrtstar::RRTStar::new(
+        start,
+        goal,
+        new_obstacles,
+        expand_dis,
+        path_resolution,
+        goal_sample_rate,
+        max_iter,
+        new_explore_area,
+        connect_circle_dist,
+        search_until_max
+    );
+    let path_res = rrt.plan();
+    match path_res {
+        Some(p) => {
+            Some(p.0)
+        }
+        None => {
+            None
         }
     }
 }
@@ -162,7 +192,7 @@ fn plan_rrt(
 fn mercipy(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<CircleBounds>()?;
     m.add_class::<ConvexPolygonBounds>()?;
-    m.add_class::<TreePlannerResult>()?;
     m.add_function(wrap_pyfunction!(plan_rrt, m)?)?;
+    m.add_function(wrap_pyfunction!(plan_rrtstar, m)?)?;
     Ok(())
 }

@@ -3,8 +3,6 @@ use kiddo::{KdTree, distance::squared_euclidean};
 use crate::{math::Point2D, Node};
 use std::collections::BTreeMap;
 
-use crate::RRTNode;
-
 /// branching path tree
 /// --
 ///
@@ -61,7 +59,7 @@ impl<T> PathTree<T> where T: Node{
         match r {
             Ok(s) => {
                 let v: Vec<usize> = s.iter().map(
-                    |(d, idx)| **idx
+                    |(_d, idx)| **idx
                 ).collect();
                 v
             },
@@ -76,12 +74,12 @@ impl<T> PathTree<T> where T: Node{
         let point = node.point();
         if self.b_map.contains_key(&id) {
             let old_id = self.b_map.get(&id).unwrap().id();
-            self.kd_tree.remove(&[point.0, point.1], &old_id);
+            self.kd_tree.remove(&[point.0, point.1], &old_id).expect("idx wasn't found in kd_tree, which we checked for");
 
         }
         self.b_map.remove(&node.id());
         self.b_map.insert(node.id(), node);
-        self.kd_tree.add(&[point.0, point.1], id);
+        self.kd_tree.add(&[point.0, point.1], id).expect("unable to add point in kd_tree, which we checked for");
     }
 
     /// get a specific path from the branching paths
@@ -112,7 +110,7 @@ impl<T> PathTree<T> where T: Node{
 
     /// get a list of node references
     pub fn node_list(&self) -> Vec<&T> {
-        let r: Vec<&T> = self.b_map.iter().map(|(k, v)| v).collect();
+        let r: Vec<&T> = self.b_map.iter().map(|(_k, v)| v).collect();
         r
     }
 
