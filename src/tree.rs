@@ -1,7 +1,7 @@
 
 use kiddo::{KdTree, distance::squared_euclidean};
 use crate::{math::Point2D, Node};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// branching path tree
 /// --
@@ -10,14 +10,14 @@ use std::collections::BTreeMap;
 /// (e.g. the ones used in RRT)
 pub struct PathTree<T> where T: Node {
     kd_tree: KdTree<f32, usize, 2>,
-    pub b_map: BTreeMap<usize, T>
+    pub b_map: HashMap<usize, T>
 }
 
 impl<T> PathTree<T> where T: Node{
     pub fn new() -> Self {
         Self{
             kd_tree: KdTree::<f32, usize, 2>::new(),
-            b_map: BTreeMap::<usize, T>::new()
+            b_map: HashMap::<usize, T>::new()
         }
     }
 
@@ -55,7 +55,7 @@ impl<T> PathTree<T> where T: Node{
     /// indices of nodes within r-ball of a node
     pub fn get_within(&self, node: &T, radius: f32) -> Vec<usize> {
         let point = node.point();
-        let r = self.kd_tree.within(&[point.0, point.1], radius, &squared_euclidean);
+        let r = self.kd_tree.within_unsorted(&[point.0, point.1], radius, &squared_euclidean);
         match r {
             Ok(s) => {
                 let v: Vec<usize> = s.iter().map(
@@ -72,11 +72,10 @@ impl<T> PathTree<T> where T: Node{
         // TODO: error handling
         let id = node.id();
         let point = node.point();
-        if self.b_map.contains_key(&id) {
-            let old_id = self.b_map.get(&id).unwrap().id();
-            self.kd_tree.remove(&[point.0, point.1], &old_id).expect("idx wasn't found in kd_tree, which we checked for");
-
-        }
+        //if self.b_map.contains_key(&id) {
+            //let old_id = self.b_map.get(&id).unwrap().id();
+            //self.kd_tree.remove(&[point.0, point.1], &old_id).expect("idx wasn't found in kd_tree, which we checked for");
+        //}
         self.b_map.remove(&node.id());
         self.b_map.insert(node.id(), node);
         self.kd_tree.add(&[point.0, point.1], id).expect("unable to add point in kd_tree, which we checked for");

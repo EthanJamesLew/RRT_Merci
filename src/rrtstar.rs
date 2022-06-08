@@ -265,9 +265,9 @@ impl<'a> RRTStar<'a> {
                     node: onode.node.clone()
                 };
                 self.node_tree.set(nnode);
-                let nnode = self.node_tree.get(idx).unwrap();
-                let node = nnode.clone();
-                self.propagate_cost_to_leaves(&node);
+                //let nnode = self.node_tree.get(idx).unwrap();
+                //let node = nnode.clone();
+                //self.propagate_cost_to_leaves(&node);
             }
         }
     }
