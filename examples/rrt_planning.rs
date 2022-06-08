@@ -1,16 +1,11 @@
-use std::any::Any;
-
 use rrt::Node;
-use rrt::RRTStarNode;
 use rrt::path::Path2D;
 use rrt::RRTNode;
 /// RRT Example
 use rrt_merci as rrt;
-use rrt_merci::math::Point2D;
 use rrt_merci::Planner;
 use rrt_merci::RRTStar;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 #[derive(Serialize, Deserialize)]
 struct RRTReturn {
