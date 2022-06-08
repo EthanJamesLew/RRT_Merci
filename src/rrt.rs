@@ -19,7 +19,7 @@ pub struct RRT<'a> {
     pub goal_sample_rate: u32,
     pub max_iter: u32,
     pub explore_area: RectangleBounds,
-    pub node_tree: PathTree,
+    pub node_tree: PathTree<RRTNode>,
     rng: ThreadRng,
 }
 

@@ -8,6 +8,13 @@ where
     Self: Sized,
 {
     fn new(pt: Point2D) -> Self;
+
+    fn point(&self) -> Point2D;
+
+    fn id(&self) -> usize;
+    
+    fn parent_id(&self) -> Option<usize>;
+
     fn get_delta(&self, other_node: &Self) -> (f32, f32);
 
     /// distance between two nodes
@@ -75,6 +82,18 @@ impl Node for RRTNode {
         }
     }
 
+    fn id(&self) -> usize {
+        return self.id
+    }
+    
+    fn parent_id(&self) -> Option<usize> {
+        return self.parent_id
+    }
+
+    fn point(&self) -> Point2D {
+        return (self.point.0, self.point.1)
+    }
+
     fn get_delta(&self, other_node: &Self) -> (f32, f32) {
         let dx = self.point.0 - other_node.point.0;
         let dy = self.point.1 - other_node.point.1;
@@ -95,6 +114,18 @@ impl Node for RRTStarNode {
             node: RRTNode::new(pt),
             cost: 0.0,
         }
+    }
+    
+    fn point(&self) -> Point2D {
+        return self.node.point()
+    }
+    
+    fn id(&self) -> usize {
+        return self.node.id()
+    }
+    
+    fn parent_id(&self) -> Option<usize> {
+        return self.node.parent_id()
     }
 
     fn get_delta(&self, other_node: &Self) -> (f32, f32) {

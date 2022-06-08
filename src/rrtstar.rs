@@ -1,3 +1,4 @@
+use crate::PathTree;
 use crate::bound::{Collision, RectangleBounds};
 use crate::math::Point2D;
 use crate::path::Path2D;
@@ -12,7 +13,7 @@ pub struct RRTStar<'a> {
     pub rrt: RRT<'a>,
     pub connect_circle_dist: f32,
     pub search_until_max: bool,
-    pub node_list: Vec<RRTStarNode>,
+    pub node_tree: PathTree<RRTStarNode>,
 }
 
 /// planner elements of rrtstar
@@ -25,7 +26,7 @@ impl Planner<'_> for RRTStar<'_> {
         // start by introdcing the start node to the node list
         let start_node = RRTNode::new(self.rrt.start);
         let end_node = RRTNode::new(self.rrt.goal);
-        self.node_list.push(RRTStarNode {
+        self.node_tree.add_node(RRTStarNode {
             node: start_node,
             cost: 0.0,
         });
@@ -38,11 +39,11 @@ impl Planner<'_> for RRTStar<'_> {
         // now start the tree search...
         for _idx in 1..=self.rrt.max_iter {
             let rnd_node = self.get_random_node(&end_node);
-            let nearest_ind = rnd_node
-                .get_nearest_node_index(&self.node_list)
+            let nearest_ind = self.node_tree
+                .get_nearest_node_index(&rnd_node)
                 .expect("node list should have a size > 0");
             let nearest_node = self
-                .node_list
+                .node_tree
                 .get(nearest_ind)
                 .expect("RRT Nearest Node failed to get from node list");
 
@@ -68,10 +69,10 @@ impl Planner<'_> for RRTStar<'_> {
                 if node_with_updated_parent.is_some() {
                     let node_p = node_with_updated_parent.unwrap();
                     self.rewire(&node_p, &near_inds);
-                    self.node_list.push(node_p);
+                    self.node_tree.add_node(node_p);
                     push_idx += 1;
                 } else {
-                    self.node_list.push(new_node);
+                    self.node_tree.add_node(new_node);
                     push_idx += 1;
                 }
             }
@@ -86,8 +87,8 @@ impl Planner<'_> for RRTStar<'_> {
 
         let last_index = self.search_best_goal_node();
         if last_index.is_some() {
-            return Some(Path2D(self.get_path(
-                self.node_list.get(last_index.unwrap()).unwrap(),
+            return Some(Path2D(self.node_tree.get_path(
+                self.node_tree.get(last_index.unwrap()).unwrap(),
                 Vec::<Point2D>::new(),
             )));
         } else {
@@ -125,7 +126,7 @@ impl<'a> RRTStar<'a> {
             rrt: rrt,
             connect_circle_dist: connect_circle_dist,
             search_until_max: search_until_max,
-            node_list: Vec::<RRTStarNode>::new(),
+            node_tree: PathTree::<RRTStarNode>::new(),
         }
     }
 
@@ -134,7 +135,7 @@ impl<'a> RRTStar<'a> {
             None => false,
             Some(parent_id) => {
                 let parent_node = self
-                    .node_list
+                    .node_tree
                     .get(parent_id as usize)
                     .expect("RRT Parent Node failed to get from node list");
                 self.is_collision_segment(&parent_node.node.point, &node.node.point)
@@ -147,7 +148,7 @@ impl<'a> RRTStar<'a> {
             None => false,
             Some(parent_id) => {
                 let parent_node = self
-                    .node_list
+                    .node_tree
                     .get(parent_id as usize)
                     .expect("RRT Parent Node failed to get from node list");
                 self.is_collision_segment(&parent_node.node.point, &node.point)
@@ -156,7 +157,7 @@ impl<'a> RRTStar<'a> {
     }
 
     fn find_near_nodes(&self, new_node: &RRTStarNode) -> Vec<usize> {
-        let n_nodes = (self.node_list.len() + 1) as f32;
+        let n_nodes = (self.node_tree.len() + 1) as f32;
         let rm = self.connect_circle_dist * (n_nodes.log(f32::exp(1.0)) / n_nodes).sqrt();
         let r = if rm < self.rrt.expand_dis {
             rm
@@ -164,13 +165,7 @@ impl<'a> RRTStar<'a> {
             self.rrt.expand_dis
         };
 
-        let mut near_inds = Vec::new();
-        for (idx, node) in self.node_list.iter().enumerate() {
-            if new_node.distance_between(&node) <= r {
-                near_inds.push(idx);
-            }
-        }
-        near_inds
+        self.node_tree.get_within(&new_node, r)
     }
 
     fn choose_parent(
@@ -185,7 +180,7 @@ impl<'a> RRTStar<'a> {
 
         let mut costs = Vec::<(f32, usize)>::new();
         for idx in near_inds {
-            let near_node = self.node_list.get(*idx).unwrap();
+            let near_node = self.node_tree.get(*idx).unwrap();
             let t_node = self.rrt.steer(
                 &near_node.node,
                 &new_node.node,
@@ -210,8 +205,7 @@ impl<'a> RRTStar<'a> {
                 min_ind = *idx;
             }
         }
-        let min_node = self.node_list.get(min_ind).unwrap();
-        // FIXME: id and parent will be off
+        let min_node = self.node_tree.get(min_ind).unwrap();
         let new_node_r =
             self.rrt
                 .steer(&min_node.node, &new_node.node, self.rrt.expand_dis, node_id);
@@ -232,7 +226,7 @@ impl<'a> RRTStar<'a> {
         for idx in near_inds {
             //let mut near_node = self.node_list.get(*idx).unwrap();
             let (edge_node, edge_cost, improved_cost) = {
-                let near_node = self.node_list.get(*idx).unwrap();
+                let near_node = self.node_tree.get(*idx).unwrap();
                 let edge_node =
                     self.rrt
                         .steer(&new_node.node, &near_node.node, self.rrt.expand_dis, 0);
@@ -247,11 +241,11 @@ impl<'a> RRTStar<'a> {
             let no_collision = !self.is_collision(&edge_node.point) && !edge_collide;
 
             if no_collision && improved_cost {
-                self.node_list[*idx].node.point = edge_node.point;
-                self.node_list[*idx].node.path = edge_node.path;
-                //println!("node {:?} rewire parent {:?} -> {:?}", self.node_list[*idx].node.id, self.node_list[*idx].node.parent_id, edge_node.parent_id);
-                self.node_list[*idx].node.parent_id = edge_node.parent_id;
-                self.node_list[*idx].cost = edge_cost;
+                let nnode = RRTStarNode{
+                    cost: edge_cost,
+                    node: RRTNode { id: *idx, parent_id:edge_node.parent_id, point: edge_node.point, path: edge_node.path },
+                };
+                self.node_tree.set(nnode);
                 self.propagate_cost_to_leaves(new_node);
             }
         }
@@ -259,47 +253,36 @@ impl<'a> RRTStar<'a> {
 
     fn propagate_cost_to_leaves(&mut self, new_node: &RRTStarNode) {
         // FIXME: this is a mess
-        for idx in 0..self.node_list.len() {
-            if self.node_list[idx].node.parent_id.is_none() {
+        for idx in 0..self.node_tree.len() {
+            if self.node_tree.get(idx).unwrap().node.parent_id.is_none() {
                 continue;
             }
-            if self.node_list[idx].node.parent_id.unwrap() == new_node.node.id {
-                self.node_list[idx].cost = self.calc_new_cost(&new_node, &self.node_list[idx]);
-                let nnode = self.node_list.get(idx).unwrap();
-                //let node = RRTStarNode { node: RRTNode { id: nnode.node.id, parent_id: nnode.node.parent_id, point: nnode.node.point, path: nnode.node.path.to_vec() }, cost: nnode.cost };
+            if self.node_tree.get(idx).unwrap().node.parent_id.unwrap() == new_node.node.id {
+                let new_cost = self.calc_new_cost(&new_node, &self.node_tree.get(idx).unwrap());
+                let onode = self.node_tree.get(idx).unwrap();
+                let nnode = RRTStarNode {
+                    cost: new_cost,
+                    node: onode.node.clone()
+                };
+                self.node_tree.set(nnode);
+                let nnode = self.node_tree.get(idx).unwrap();
                 let node = nnode.clone();
                 self.propagate_cost_to_leaves(&node);
             }
         }
     }
 
-    /// get path from an node in the internal node list
-    pub fn get_path(&self, goal_node: &RRTStarNode, mut path: Vec<Point2D>) -> Vec<Point2D> {
-        path.push(goal_node.node.point);
-        match goal_node.node.parent_id {
-            None => return path,
-            Some(idx) => return self.get_path(self.node_list.get(idx).unwrap(), path),
-        }
-    }
-
     fn search_best_goal_node(&self) -> Option<usize> {
-        //todo!();
-        // TODO: FIXME
-        let dist_to_goal = self
-            .node_list
-            .iter()
-            .map(|x| x.node.distance_between_pos(self.rrt.goal));
-        let mut goal_inds = Vec::<usize>::new();
-        for (idx, dist) in dist_to_goal.enumerate() {
-            if dist <= self.rrt.expand_dis {
-                goal_inds.push(idx);
-            }
-        }
+        let goal_node = RRTStarNode {
+            node: RRTNode::new(self.rrt.goal),
+            cost: 0.0
+        };
+        let goal_inds = self.node_tree.get_within(&goal_node, self.rrt.expand_dis);
 
         let mut safe_goal_inds = Vec::<usize>::new();
         for idx in goal_inds {
             let t_node = self.rrt.steer(
-                &self.node_list.get(idx).unwrap().node,
+                &self.node_tree.get(idx).unwrap().node,
                 &RRTNode::new(self.rrt.goal),
                 self.rrt.expand_dis,
                 0,
@@ -311,9 +294,9 @@ impl<'a> RRTStar<'a> {
 
         let min_cost = safe_goal_inds
             .iter()
-            .fold(f32::INFINITY, |a, &b| a.min(self.node_list[b].cost));
+            .fold(f32::INFINITY, |a, &b| a.min(self.node_tree.get(b).unwrap().cost));
         for idx in safe_goal_inds {
-            if self.node_list[idx].cost == min_cost {
+            if self.node_tree.get(idx).unwrap().cost == min_cost {
                 return Some(idx);
             }
         }
