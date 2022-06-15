@@ -1,5 +1,8 @@
-# RRT_Merci
-RRT Implementation to be used for the GRAIC Competition
+# MERCI RRT Path Planners
+Implementations of RRT-based algorithms used in [GRAIC 2.0](https://popgri.github.io/Race/outreach/) Competition by team 
+MERCI (MEthodological Racing Computer Intelligence). **MERCI placed 1st in the Head-to-Head category.**
+
+![racing example](./doc/img/planner_demo.gif)
 
 | Rapidly Exploring Random Tree (RRT)    | RRT*                                            |
 |----------------------------------------|-------------------------------------------------|
