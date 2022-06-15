@@ -4,7 +4,7 @@ MERCI (MEthodological Racing Computer Intelligence). **MERCI placed 1st in the H
 
 ![racing example](./doc/img/planner_demo.gif)
 
-| Rapidly Exploring Random Tree (RRT)    | RRT*                                            |
+| Rapidly Exploring Random Trees (RRT)    | RRT*                                            |
 |----------------------------------------|-------------------------------------------------|
 | ![RRT Diagram](./doc/img/RRT_Tree.svg) | ![RRT Star Diagram](./doc/img/RRTStar_Tree.svg) |
 
